@@ -19,25 +19,26 @@ app.message('play', ({message, say}) => {
 				"text": `Pick a card, any card`
 			},
 		},
-		{
-			"type": "actions",
-			"block_id": "card_block",
-			"elements": []
-		}
 		]
 	};
 	for(var i = 0; i < options.length; i++) {
-		response.blocks[1].elements.push( 
+		response.blocks.push( 
 			{
+			"type":"section",
+			"text": {
+				"type":"plain_text",
+				"text": "Will you choose " + options[i] + "?"
+			},
+			"accessory": {
 				"type": "button",
-				"action_id": "play_click",
-				//"action_id": "button_click",
 				"text": {
 					"type": "plain_text",
 					"text": options[i]
 				},
-				"value": "value-0" 
-			});
+				"action_id": "play_click",
+				"value": options[i]
+			}
+		});
 	}
 
 	say(response);
@@ -73,10 +74,19 @@ app.action('button_click', ({body, ack, say}) => {
 	say(`<@${body.user.id}> clicked the button`);
 });
 
-app.action('play_click', ({ack, say}) => {
+app.action('play_click', ({body, ack, say}) => {
 	ack();
-	Math.floor(Math.random() * Math.floor(max));
-	say(`wise choice <@${body.user.id}>`);
+	console.log(body.actions[0].value);
+	let diceroll = Math.floor(Math.random() * Math.floor(options.length));
+	console.log(diceroll);
+	console.log(options.indexOf(body.actions[0].value));
+	if(diceroll == options.indexOf(body.actions[0].value)) {
+		say(`wise choice <@${body.user.id}>`);
+		points += 1;
+	} else {
+		say(`sorry bub`);
+	}
+	say(`You have ${points} points`);
 });
 
 (async () => {
