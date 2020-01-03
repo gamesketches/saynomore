@@ -8,6 +8,14 @@ const app = new App({
 
 let options = ["yay","nay","hooray"];
 
+let handOne = ["bloop", "bleep", "meep"];
+
+let handTwo = ["moop", "fleep", "creep"];
+
+let lastPick = -1;
+
+let selections = {};
+
 let points = 0;
 
 app.message('play', ({message, say}) => {
@@ -42,6 +50,10 @@ app.message('play', ({message, say}) => {
 	}
 
 	say(response);
+	if(lastPick > -1) {
+		console.log("throwin up");
+		say(`${options[lastPick]}`);
+	}
 });
 		
 app.message('hello', ({message, say}) => {
@@ -79,7 +91,8 @@ app.action('play_click', ({body, ack, say}) => {
 	console.log(body.actions[0].value);
 	let diceroll = Math.floor(Math.random() * Math.floor(options.length));
 	console.log(diceroll);
-	console.log(options.indexOf(body.actions[0].value));
+	lastPick = options.indexOf(body.actions[0].value);
+	console.log(lastPick);
 	if(diceroll == options.indexOf(body.actions[0].value)) {
 		say(`wise choice <@${body.user.id}>`);
 		points += 1;
