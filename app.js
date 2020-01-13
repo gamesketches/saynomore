@@ -1,5 +1,7 @@
 const { App } = require('@slack/bolt');
 
+const {WebClient} = require('@slack/web-api');
+
 function MakeButtonCard(text) {
 	returnVal = {
 			"type":"section",
@@ -24,6 +26,15 @@ const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET
 });
+
+const web = new WebClient(app.token);
+
+(async function (){
+	const res = web.conversations.list({});
+
+	console.log("Successfully got list");
+	console.log(res);
+})();
 
 let options = ["yay","nay","hooray"];
 
@@ -54,8 +65,20 @@ app.message('play', ({message, say}) => {
 
 	say(response);
 	if(lastPick > -1) {
-		console.log("throwin up");
 		say(`${options[lastPick]}`);
+	}
+});
+
+app.message('start game', ({message, say}) => {
+	try {
+		const result = await app.client.chat.postMessage({
+			token: context.botToken,
+			channel: welcomeChannelId,
+			text: `Lets play a game~`
+		});
+		console.log(result);
+	} catch (error) {
+		console.error(error);
 	}
 });
 
