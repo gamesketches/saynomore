@@ -10,6 +10,8 @@
   "license": "ISC",
   "dependencies": {
     "@slack/bolt": "^1.4.1",
+    "@slack/events-api": "^2.3.0",
+    "@slack/interactive-messages": "^1.4.0",
     "@slack/web-api": "^5.6.0",
     "request": "^2.88.0"
   }

@@ -1,6 +1,16 @@
+const {createServer} = require('http');
+
+const {createEventAdapter} = require('@slack/events-api');
+
 const { App } = require('@slack/bolt');
 
 const {WebClient} = require('@slack/web-api');
+
+const {createMessageAdapter} = require('@slack/interactive-messages');
+
+const web = new WebClient(process.env.SLACK_BOT_TOKEN);
+
+const slackEvents = createEventAdapter(process.env.SLACK_SIGNING_SECRET);
 
 function MakeButtonCard(text) {
 	returnVal = {
@@ -27,14 +37,65 @@ const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET
 });
 
-const web = new WebClient(app.token);
+const slackInteractions = createMessageAdapter(process.env.SLACK_SIGNING_SECRET);
 
-(async function (){
-	const res = web.conversations.list({});
+async function FindChannelId(channelName){
+	try {
+		const res = await web.conversations.list({});
+		console.log("Successfully got channel list");
+		let channels = res.channels;
+		for(let i = 0; i < channels.length; i++) {
+			console.log(channels[i].name);
+			if(channels[i].name == channelName) {
+				console.log("Found it!");
+				console.log(channels[i].id);
+				return channels[i].id;
+				break;
+			}
+		}
+	} catch (e) {
+		console.error(e);
+	}
+};
 
-	console.log("Successfully got list");
-	console.log(res);
-})();
+async function PostMessage(message, targetChannel) {
+	try {
+		const res = await web.chat.postMessage({channel:targetChannel, text: message});
+		console.log("Posted message in " + targetChannel);
+		console.log(res);
+	} catch(e) {
+		console.error(e);
+	}
+};
+
+//PostMessage("hello world", "general");
+
+async function PostThenUpdate(firstMessage, secondMessage, targetChannel) {
+	try {
+		targetChannel = await FindChannelId(targetChannel);
+		let res = await web.chat.postMessage({channel:targetChannel, text: firstMessage});
+		console.log("Posted first message");
+		console.log(res);
+		let timeStamp = res.ts;
+		await new Promise(resolve => setTimeout(resolve, 1000));
+		res = await web.chat.update({channel:targetChannel, text: secondMessage, ts:timeStamp});
+		console.log("Updated");
+	} catch(e) {
+		console.error(e);
+	}
+};	
+
+slackEvents.on('message', (event) => {
+	console.log(`Received a message event: user ${event.user} in channel ${event.channel} says ${event.text}`);
+});
+
+slackEvents.on('error', (error) => {
+	console.log(error);
+});
+//const server = createServer(slackInteractions.requestListener());
+
+
+//PostThenUpdate("yay", "nay", "general");
 
 let options = ["yay","nay","hooray"];
 
@@ -69,7 +130,7 @@ app.message('play', ({message, say}) => {
 	}
 });
 
-app.message('start game', ({message, say}) => {
+/*app.message('start game', ({message, say}) => {
 	try {
 		const result = await app.client.chat.postMessage({
 			token: context.botToken,
@@ -80,7 +141,7 @@ app.message('start game', ({message, say}) => {
 	} catch (error) {
 		console.error(error);
 	}
-});
+});*/
 
 app.message('put up hands', ({message, say}) => {
 	say(`Pick a card from the first hand`);
@@ -213,7 +274,10 @@ app.action('hands_click_three', ({body, ack, say}) => {
 
 (async () => {
   // Start your app
-  await app.start(process.env.PORT || 3000);
+ // await app.start(process.env.PORT || 3000);
+
+  const server = await slackEvents.start(3000);
 
   console.log('⚡️ Bolt app is running!');
 })();
+
