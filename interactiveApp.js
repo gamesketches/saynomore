@@ -44,6 +44,7 @@ async function PostMessage(message, targetChannel, blockJson) {
 	let args = {text:message, channel:targetChannel, blocks:blockJson};
 	try {
 		const res = await web.chat.postMessage(args);
+		console.log(res);
 	} catch(e) {
 		console.log(e);
 	}
@@ -60,7 +61,7 @@ app.get('/', (req, res) => {
 
 
 async function StartGame(channel, starter) {
-	let ctaBlock = 
+	let joinBlock = 
 		[
 			{
 				"type":"section",
@@ -75,52 +76,48 @@ async function StartGame(channel, starter) {
 						"text": "Join"
 					},
 					"action_id": "click_join",
-					"value": "join"
+					"value": "click_join"
 				}
 		  }
 		];	
+	let startBlock =
+		[
+			{
+				"type":"section",
+				"text": {
+					"type":"plain_text",
+					"text":"Click here when you're ready to start!"
+				},
+				"accessory": {
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"text": "Begin Game"
+					},
+					"value": "click_begin"
+				}
+			}
+		];
 	try {
-		await PostMessage("Click to join", channel, ctaBlock);
+		await PostMessage("Click to join", channel, joinBlock);
 	} catch(e) {
 		console.log(e);
 	}
+
+	try {
+		await PostMessage("Click to begin", starter, startBlock);
+	} catch(e) {
+		console.log(e);
+	}
+	
 	gameStatus = "joining";
 };
 
 async function BeginGame() {
-	let ctaBlock = [
-	{
-		"type": "actions",
-		"elements": [
-			{
-				"type": "button",
-				"text": {
-					"type": "plain_text",
-					"emoji": true,
-					"text": "Approve"
-				},
-				"style": "primary",
-				"value": "click_me_123"
-			},
-			{
-				"type": "button",
-				"text": {
-					"type": "plain_text",
-					"emoji": true,
-					"text": "Deny"
-				},
-				"style": "danger",
-				"value": "click_me_123"
-			}
-		]
-		}
-	] 
-	for(let i = 0; i< participants.length; i++) {
-		 try {
-			await PostMessage("Click to join", participants[i], ctaBlock);
-		} catch(e) {
-			console.log(e);
-		}
+	console.log("num participants " + participants.length);
+	for(let i = 0; i < participants.length; i++) {
+		participants[i] = CreateNewParticipant(participants[i]);
+		console.log(participants[i]);
 	}
 	gameStatus = "playing";
 	CreateNewEventPrompt();
@@ -139,31 +136,47 @@ app.post('/actions', (req,res) => {
 app.post('/interactive', (req,res) => {
 	console.log("got something");
 	
+	res.send('');
 	const payload = JSON.parse(req.body.payload);
 	console.log(payload);
-	//participants.push(payload.user.id);
-	if(gameStatus == "playing") {
-		CreateNewEventPrompt();
-	} else {
+	
+	if(payload.actions[0].value == "click_begin") {
 		gameStatus = "playing";
 		BeginGame();
-	} 
-	res.send('');
+	} else if(payload.actions[0].value == "click_join") {
+		participants.push(payload.user.id);
+	} else if(gameStatus == "playing") {
+		for(let i = 0; i < participants.length; i++) {
+			if(participants[i].id == payload.user.id) {
+				participants[i].response = payload.actions[0].value;
+				participants[i].responded = true;
+				break;
+			}
+		}
+		let allResponded = true;
+		for(let i = 0; i < participants.length; i++) {
+			if(!participants[i].responded) {
+				allResponded = false;
+			}
+		}
+		if(allResponded) {
+			CreateNewEventPrompt()
+		}
+	}  
 });
 
 app.post('/saynomore', (req, res) => {
 	console.log("say no more post");
 	
 	homeChannel = req.body.channel_id;
-	res.send('Starting game');
-	StartGame(req.body.channel_id);
+	res.send('');
+	StartGame(req.body.channel_id,req.body.user_id);
 	console.log(req.body);
 });
 
 (async () => {
 
-	//const server = await slackInteractions.start(3000);
-const server = app.listen(3000);
+	const server = app.listen(3000);
 
 	console.log("server up at ", server.address());
 })();
@@ -183,20 +196,33 @@ function CreateNewEventPrompt() {
 		"elements": []
 		}
 	];
-	for(let i = 0; i < reactions.length; i++) {
-		promptBlock[1].elements.push( {
-				"type": "button",
-				"text": {
-					"type": "plain_text",
-					"emoji": true,
-					"text": reactions[i] 
-				},
-				"value": "click_me_123"
-			});
+	for(let j = 0; j < participants.length; j++) {
+		let player = participants[j];
+		player.responded = false;
+		for(let i = 0; i < player.hand.length; i++) {
+			promptBlock[1].elements.push( {
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"emoji": true,
+						"text": player.hand[i] 
+					},
+					"value": player.hand[i] 
+				});
+			}
+		try {
+			PostMessage(eventPrompt, player.id, promptBlock);
+		} catch(e) {
+			console.log(e);
 		}
-	try {
-		PostMessage(eventPrompt, homeChannel, promptBlock);
-	} catch(e) {
-		console.log(e);
 	}
+}
+
+function CreateNewParticipant(userId) {
+	let newHand = [];
+	for(let i = 0; i < 5; i++) {
+		newHand.push(reactions[Math.floor(Math.random() * reactions.length)]);
+	}
+	console.log(newHand);
+	return {id:userId, hand:newHand, responded:false};
 }
