@@ -21,6 +21,7 @@ let homeChannel = "";
 let cards = [];
 let reactions = [];
 let curScenario = "";
+let picker = "";
 
 fs.createReadStream('OptionAndScenarioCards.csv')
 	.pipe(csv())
@@ -61,32 +62,39 @@ app.post('/interactive', (req,res) => {
 	const payload = JSON.parse(req.body.payload);
 	console.log(payload);
 	
-	if(payload.actions[0].value == "click_begin") {
+	let actionId = payload.actions[0].value;
+	
+	if(actionId == "click_begin") {
 		gameStatus = "playing";
 		BeginGame();
-	} else if(payload.actions[0].value == "click_join") {
+	} else if(actionId == "click_join") {
 		participants.push(payload.user.id);
 	} else if(gameStatus == "playing") {
-		for(let i = 0; i < participants.length; i++) {
-			let player = participants[i];
-			if(player.id == payload.user.id) {
-				player.response = payload.actions[0].value;
-				player.hand.splice(player.hand.indexOf(player.response),1,DrawReactionCard()); 
-				player.responded = true;
-				participants[i] = player;
-				console.log(participants);
-				break;
+		if(IsPlayerResponse(actionId)) {
+			for(let i = 0; i < participants.length; i++) {
+				let player = participants[i];
+				if(player.id == payload.user.id) {
+					player.response = actionId;
+					player.hand.splice(player.hand.indexOf(player.response),1,DrawReactionCard()); 
+					player.responded = true;
+					participants[i] = player;
+					console.log(participants);
+					break;
+				}
 			}
-		}
-		let allResponded = true;
-		for(let i = 0; i < participants.length; i++) {
-			if(!participants[i].responded) {
-				console.log("someone hasn't responded!");
-				allResponded = false;
+			let allResponded = true;
+			for(let i = 0; i < participants.length; i++) {
+				if(!participants[i].responded) {
+					console.log("someone hasn't responded!");
+					allResponded = false;
+				}
 			}
-		}
-		if(allResponded) {
-			PostResponses();
+			if(allResponded) {
+				PickWinner();
+			}
+		} else {
+			ScorePoint(actionId);
+			PostResponses(actionId);
 			CreateNewEventPrompt()
 		}
 	}  
@@ -108,7 +116,7 @@ async function StartGame(channel, starter) {
 				"type":"section",
 				"text": {
 					"type":"plain_text",
-					"text":"Who wants to play Say No More? Emoji react to join"
+					"text":"Who wants to play Say No More?"
 				},
 				"accessory": {
 					"type": "button",
@@ -146,22 +154,32 @@ async function StartGame(channel, starter) {
 	}
 
 	try {
-		await PostMessage("Click to begin", starter, startBlock);
+		await PostEphemeral("Click to begin", channel, starter, startBlock);
 	} catch(e) {
 		console.log(e);
 	}
 	
+	picker = starter;
 	gameStatus = "joining";
 };
 
 async function BeginGame() {
 	console.log("num participants " + participants.length);
-	for(let i = 0; i < participants.length; i++) {
-		participants[i] = CreateNewParticipant(participants[i]);
-		console.log(participants[i]);
+	if(participants.length < 1) {
+		try {
+			await PostEphemeral("No one wanted to join :(", homeChannel, picker);
+		} catch(e) {
+			console.log(e);
+		}
+		gameStatus = "idle";
+	} else {
+		for(let i = 0; i < participants.length; i++) {
+			participants[i] = CreateNewParticipant(participants[i]);
+			console.log(participants[i]);
+		}
+		gameStatus = "playing";
+		CreateNewEventPrompt();
 	}
-	gameStatus = "playing";
-	CreateNewEventPrompt();
 }
 
 (async () => {
@@ -173,6 +191,7 @@ async function BeginGame() {
 
 function CreateNewEventPrompt() {
 	curScenario = cards[Math.floor(cards.length * Math.random())];
+	PickNextPicker();
 	let promptBlock = [
 	{
 		"type": "section",
@@ -201,11 +220,54 @@ function CreateNewEventPrompt() {
 				});
 			}
 		try {
-			PostMessage(curScenario, player.id, promptBlock);
+			PostEphemeral(curScenario, homeChannel, player.id, promptBlock);
 		} catch(e) {
 			console.log(e);
 		}
 	}
+}
+
+function IsPlayerResponse(actionId) {
+	let notAPlayerId = true;
+	participants.forEach(function(player) { 
+		if(player.id == actionId) notAPlayerId = false;
+		}
+	);
+	return notAPlayerId;
+}
+
+function PickWinner() {
+	let promptBlock = [
+		{
+			"type": "section",
+			"text": {
+					"type": "plain_text",
+					"text": "Pick the best response to the current scenario!"
+				}
+		},
+		{
+			"type": "actions",
+			"elements": []
+			}
+		];
+	for(let i = 0; i < participants.length; i++) {
+		promptBlock[1].elements.push( {
+					"type": "button",
+					"text": {
+						"type": "plain_text",
+						"emoji": true,
+						"text": participants[i].response 
+					},
+					"value": participants[i].id 
+				});
+			}
+	PostEphemeral("Pick a winner", homeChannel, picker, promptBlock);
+}
+
+function ScorePoint(winnerId) {
+	participants.forEach(function(element) { 
+		if(element.id == winnerId) element.score++;
+	});
 }
 
 function PostResponses() {
@@ -231,7 +293,20 @@ function CreateNewParticipant(userId) {
 		newHand.push(DrawReactionCard());
 	}
 	console.log(newHand);
-	return {id:userId, hand:newHand, responded:false};
+	return {id:userId, hand:newHand, responded:false, score:0};
+}
+
+function PickNextPicker() {
+	for(let i = 0; i < participants.length; i++) {
+		if(participants[i].id == picker) {
+			if(i + 1 == participants.length) {
+				picker = participants[0].id;
+			} else {
+				picker = participants[i].id;
+				return;
+			}
+		}
+	}
 }
 
 async function FindChannelId(channelName) {
@@ -252,6 +327,16 @@ async function PostMessage(message, targetChannel, blockJson) {
 	let args = {text:message, channel:targetChannel, blocks:blockJson};
 	try {
 		const res = await web.chat.postMessage(args);
+		console.log(res);
+	} catch(e) {
+		console.log(e);
+	}
+}
+
+async function PostEphemeral(message, targetChannel, targetUser, blockJson) {
+	let args = {text:message, channel:targetChannel, user:targetUser, blocks:blockJson, attachments:null};
+	try {
+		const res = await web.chat.postEphemeral(args);
 		console.log(res);
 	} catch(e) {
 		console.log(e);
