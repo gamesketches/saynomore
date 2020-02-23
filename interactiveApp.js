@@ -131,17 +131,9 @@ async function StartGame(channel, starter) {
 				}
 			}
 		];
-	try {
-		await PostMessage("Click to join", channel, joinBlock);
-	} catch(e) {
-		console.log(e);
-	}
+	PostMessage("Click to join", channel, joinBlock);
 
-	try {
-		await PostEphemeral("Click to begin", channel, starter, startBlock);
-	} catch(e) {
-		console.log(e);
-	}
+	PostEphemeral("Click to begin", channel, starter, startBlock);
 	
 	picker = starter;
 	gameStatus = "joining";
@@ -150,17 +142,9 @@ async function StartGame(channel, starter) {
 async function BeginGame() {
 	console.log("num participants " + participants.length);
 	if(participants.length < 1) {
-		try {
-			await PostEphemeral("No one wanted to join :(", homeChannel, picker);
-		} catch(e) {
-			console.log(e);
-		}
+		PostEphemeral("No one wanted to join :(", homeChannel, picker);
 		gameStatus = "idle";
 	} else {
-		/*for(let i = 0; i < participants.length; i++) {
-			participants[i] = CreateNewParticipant(participants[i]);
-			console.log(participants[i]);
-		}*/
 		gameStatus = "playing";
 		CreateNewEventPrompt();
 	}
@@ -203,11 +187,7 @@ function CreateNewEventPrompt() {
 					"value": player.hand[i] 
 				});
 			}
-		try {
-			PostEphemeral(curScenario, homeChannel, player.id, promptBlock);
-		} catch(e) {
-			console.log(e);
-		}
+		PostEphemeral(curScenario, homeChannel, player.id, promptBlock);
 	}
 }
 
@@ -291,11 +271,7 @@ function PostResponses() {
 	for(let i = 0; i < participants.length; i++) {
 		response += participants[i].response + "\n";
 	}
-	try {
-		PostMessage(response, homeChannel);
-	} catch(e) {
-		console.log(e);
-	}
+	PostMessage(response, homeChannel);
 }
 		
 
