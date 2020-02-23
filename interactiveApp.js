@@ -15,7 +15,7 @@ const web = new WebClient(process.env.SLACK_BOT_TOKEN);
 const slackInteractions = createMessageAdapter(process.env.SLACK_SIGNING_SECRET);
 
 
-const winScore = 5;
+const winScore = 2;
 let gameStatus = "idle";
 let participants = [];
 let homeChannel = "";
@@ -23,6 +23,7 @@ let cards = [];
 let reactions = [];
 let curScenario = "";
 let picker = "";
+let sentMessages = [];
 
 fs.createReadStream('OptionAndScenarioCards.csv')
 	.pipe(csv())
@@ -72,27 +73,7 @@ app.post('/interactive', (req,res) => {
 		participants.push(CreateNewParticipant(payload.user.id,payload.user.name));
 	} else if(gameStatus == "playing") {
 		if(IsPlayerResponse(actionId)) {
-			for(let i = 0; i < participants.length; i++) {
-				let player = participants[i];
-				if(player.id == payload.user.id) {
-					player.response = actionId;
-					player.hand.splice(player.hand.indexOf(player.response),1,DrawReactionCard()); 
-					player.responded = true;
-					participants[i] = player;
-					console.log(participants);
-					break;
-				}
-			}
-			let allResponded = true;
-			for(let i = 0; i < participants.length; i++) {
-				if(!participants[i].responded) {
-					console.log("someone hasn't responded!");
-					allResponded = false;
-				}
-			}
-			if(allResponded) {
-				PickWinner();
-			}
+			ProcessPlayerResponses(payload.user.id, actionId);
 		} else {
 			PostResponses(actionId);
 			ScorePoint(actionId);
@@ -239,6 +220,30 @@ function IsPlayerResponse(actionId) {
 	return notAPlayerId;
 }
 
+function ProcessPlayerResponses(userId, actionId) {
+	for(let i = 0; i < participants.length; i++) {
+				let player = participants[i];
+				if(player.id == userId) {
+					player.response = actionId;
+					player.hand.splice(player.hand.indexOf(player.response),1,DrawReactionCard()); 
+					player.responded = true;
+					participants[i] = player;
+					console.log(participants);
+					break;
+				}
+			}
+			let allResponded = true;
+			for(let i = 0; i < participants.length; i++) {
+				if(!participants[i].responded) {
+					console.log("someone hasn't responded!");
+					allResponded = false;
+				}
+			}
+			if(allResponded) {
+				PickWinner();
+			}
+}
+
 function PickWinner() {
 	let promptBlock = [
 		{
@@ -273,8 +278,9 @@ function ScorePoint(winnerId) {
 			 player.score++;
 			 PostMessage(player.name + " won this round with '" + player.response + "'!", homeChannel);
 			 if(player.score >= winScore) {
-				PostMessage("And with that they won the whole thing! Great game everyone!", homeChannel);
+				PostMessage("And with that they won the whole thing! Great game everyone! All messages will be deleted in 30 seconds", homeChannel);
 				gameStatus = "idle";
+				setTimeout(CleanUpGame, 30000);
 		     }
 		}
 	});
@@ -318,6 +324,18 @@ function PickNextPicker() {
 	}
 }
 
+async function CleanUpGame() {
+	gameStatus = "idle";
+	for(let i = 0; i < sentMessages.length; i++) {
+		let args = {channel:homeChannel,ts:sentMessages[i]};
+		try {
+			const res = await web.chat.delete(args);
+		} catch(e) {
+			console.log(e);
+		}
+	}
+}
+
 async function FindChannelId(channelName) {
 	try {
 		const res = await web.conversations.list({});
@@ -336,6 +354,7 @@ async function PostMessage(message, targetChannel, blockJson) {
 	let args = {text:message, channel:targetChannel, blocks:blockJson};
 	try {
 		const res = await web.chat.postMessage(args);
+		sentMessages.push(res.ts);
 		console.log(res);
 	} catch(e) {
 		console.log(e);
