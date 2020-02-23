@@ -15,6 +15,7 @@ const web = new WebClient(process.env.SLACK_BOT_TOKEN);
 const slackInteractions = createMessageAdapter(process.env.SLACK_SIGNING_SECRET);
 
 
+const winScore = 5;
 let gameStatus = "idle";
 let participants = [];
 let homeChannel = "";
@@ -68,7 +69,7 @@ app.post('/interactive', (req,res) => {
 		gameStatus = "playing";
 		BeginGame();
 	} else if(actionId == "click_join") {
-		participants.push(payload.user.id);
+		participants.push(CreateNewParticipant(payload.user.id,payload.user.name));
 	} else if(gameStatus == "playing") {
 		if(IsPlayerResponse(actionId)) {
 			for(let i = 0; i < participants.length; i++) {
@@ -93,9 +94,11 @@ app.post('/interactive', (req,res) => {
 				PickWinner();
 			}
 		} else {
-			ScorePoint(actionId);
 			PostResponses(actionId);
-			CreateNewEventPrompt()
+			ScorePoint(actionId);
+			if(gameStatus != "idle") {
+				CreateNewEventPrompt()
+			}
 		}
 	}  
 });
@@ -173,10 +176,10 @@ async function BeginGame() {
 		}
 		gameStatus = "idle";
 	} else {
-		for(let i = 0; i < participants.length; i++) {
+		/*for(let i = 0; i < participants.length; i++) {
 			participants[i] = CreateNewParticipant(participants[i]);
 			console.log(participants[i]);
-		}
+		}*/
 		gameStatus = "playing";
 		CreateNewEventPrompt();
 	}
@@ -265,8 +268,15 @@ function PickWinner() {
 }
 
 function ScorePoint(winnerId) {
-	participants.forEach(function(element) { 
-		if(element.id == winnerId) element.score++;
+	participants.forEach(function(player) { 
+		if(player.id == winnerId){
+			 player.score++;
+			 PostMessage(player.name + " won this round with '" + player.response + "'!", homeChannel);
+			 if(player.score >= winScore) {
+				PostMessage("And with that they won the whole thing! Great game everyone!", homeChannel);
+				gameStatus = "idle";
+		     }
+		}
 	});
 }
 
@@ -287,13 +297,12 @@ function DrawReactionCard() {
 	return reactions[Math.floor(Math.random() * reactions.length)];
 }
 
-function CreateNewParticipant(userId) {
+function CreateNewParticipant(userId,userName) {
 	let newHand = [];
 	for(let i = 0; i < 5; i++) {
 		newHand.push(DrawReactionCard());
 	}
-	console.log(newHand);
-	return {id:userId, hand:newHand, responded:false, score:0};
+	return {id:userId, name:userName, hand:newHand, responded:false, score:0};
 }
 
 function PickNextPicker() {
