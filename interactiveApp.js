@@ -5,7 +5,9 @@ const express = require('express');
 const app = express();
 const csv = require('csv-parser');
 const fs = require('fs');
+const axios = require('axios');
 const results = [];
+const blockTemplates = require ('./blockTemplates');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
@@ -15,7 +17,7 @@ const web = new WebClient(process.env.SLACK_BOT_TOKEN);
 const slackInteractions = createMessageAdapter(process.env.SLACK_SIGNING_SECRET);
 
 
-const winScore = 2;
+const winScore = 5;
 let gameStatus = "idle";
 let participants = [];
 let homeChannel = "";
@@ -24,6 +26,7 @@ let reactions = [];
 let curScenario = "";
 let picker = "";
 let sentMessages = [];
+let sentEphemeral = [];
 
 fs.createReadStream('OptionAndScenarioCards.csv')
 	.pipe(csv())
@@ -67,13 +70,16 @@ app.post('/interactive', (req,res) => {
 	let actionId = payload.actions[0].value;
 	
 	if(actionId == "click_begin") {
+		UpdateEphemeralMessage(payload.response_url, "Here we go!");
 		gameStatus = "playing";
 		BeginGame();
 	} else if(actionId == "click_join") {
 		participants.push(CreateNewParticipant(payload.user.id,payload.user.name));
+		UpdateJoinButton(payload.container.message_ts);
 	} else if(gameStatus == "playing") {
 		if(IsPlayerResponse(actionId)) {
 			ProcessPlayerResponses(payload.user.id, actionId);
+			UpdateEphemeralMessage(payload.response_url, "Got it!");
 		} else {
 			PostResponses(actionId);
 			ScorePoint(actionId);
@@ -94,43 +100,9 @@ app.post('/saynomore', (req, res) => {
 });
 
 async function StartGame(channel, starter) {
-	let joinBlock = 
-		[
-			{
-				"type":"section",
-				"text": {
-					"type":"plain_text",
-					"text":"Who wants to play Say No More?"
-				},
-				"accessory": {
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Join"
-					},
-					"action_id": "click_join",
-					"value": "click_join"
-				}
-		  }
-		];	
-	let startBlock =
-		[
-			{
-				"type":"section",
-				"text": {
-					"type":"plain_text",
-					"text":"Click here when you're ready to start!"
-				},
-				"accessory": {
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Begin Game"
-					},
-					"value": "click_begin"
-				}
-			}
-		];
+	let joinBlock = blockTemplates.joinBlock;
+	let startBlock = blockTemplates.beginBlock;
+		
 	PostMessage("Click to join", channel, joinBlock);
 
 	PostEphemeral("Click to begin", channel, starter, startBlock);
@@ -139,6 +111,37 @@ async function StartGame(channel, starter) {
 	gameStatus = "joining";
 };
 
+async function UpdateJoinButton(timestamp) {
+	let joinBlock = blockTemplates.joinBlock;
+	
+	let contextBlock = {
+		"type":"context",
+		"elements": []
+	};
+	
+	for(let i = 0; i < participants.length; i++) {
+		let args = {user:participants[i].id};
+		try {
+			const res = await web.users.profile.get(args);
+			contextBlock.elements.push({
+			"type":"image",
+			"image_url": res.profile.image_24,
+			"alt_text": participants[i].name
+		});
+		} catch(e) {
+			console.log(e);
+		}
+		
+	}
+
+	joinBlock.push(contextBlock);
+	let arg = {channel:homeChannel, text:"Join", ts:timestamp, blocks:joinBlock};
+	try {
+		const otherRes = web.chat.update(arg);
+	} catch(e) {
+		console.log(e);
+	}
+}
 async function BeginGame() {
 	console.log("num participants " + participants.length);
 	if(participants.length < 1) {
@@ -175,6 +178,10 @@ function CreateNewEventPrompt() {
 	];
 	for(let j = 0; j < participants.length; j++) {
 		let player = participants[j];
+		if(player.id == picker) {
+			player.responded = true;
+			continue;
+		}
 		player.responded = false;
 		for(let i = 0; i < player.hand.length; i++) {
 			promptBlock[1].elements.push( {
@@ -188,6 +195,7 @@ function CreateNewEventPrompt() {
 				});
 			}
 		PostEphemeral(curScenario, homeChannel, player.id, promptBlock);
+		promptBlock[1].elements = [];
 	}
 }
 
@@ -239,16 +247,18 @@ function PickWinner() {
 			}
 		];
 	for(let i = 0; i < participants.length; i++) {
-		promptBlock[1].elements.push( {
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"emoji": true,
-						"text": participants[i].response 
-					},
-					"value": participants[i].id 
-				});
-			}
+		if(participants[i].id != picker) {
+			promptBlock[1].elements.push( {
+						"type": "button",
+						"text": {
+							"type": "plain_text",
+							"emoji": true,
+							"text": participants[i].response 
+						},
+						"value": participants[i].id 
+					});
+		}
+	}
 	PostEphemeral("Pick a winner", homeChannel, picker, promptBlock);
 }
 
@@ -292,8 +302,10 @@ function PickNextPicker() {
 		if(participants[i].id == picker) {
 			if(i + 1 == participants.length) {
 				picker = participants[0].id;
+				console.log(participants[0].name);
 			} else {
-				picker = participants[i].id;
+				picker = participants[i+1].id;
+				console.log(participants[i+1].name);
 				return;
 			}
 		}
@@ -309,6 +321,9 @@ async function CleanUpGame() {
 		} catch(e) {
 			console.log(e);
 		}
+	}
+	for(let i = 0; i < sentEphemeral.length; i++) {
+			DeleteEphemeralMessage(sentEphemeral[i]);
 	}
 }
 
@@ -341,8 +356,30 @@ async function PostEphemeral(message, targetChannel, targetUser, blockJson) {
 	let args = {text:message, channel:targetChannel, user:targetUser, blocks:blockJson, attachments:null};
 	try {
 		const res = await web.chat.postEphemeral(args);
+		sentEphemeral.push(res.response_url);
 		console.log(res);
 	} catch(e) {
 		console.log(e);
 	}
+}
+
+function UpdateEphemeralMessage(response_url, newText) {
+	axios.post(response_url, {
+			"replace_original":"true",
+			"text": newText 
+		}).then(function (response) {
+			console.log(response);
+		}).catch(function (error) {
+			console.log(error);
+		});
+}
+
+function DeleteEphemeralMessage(response_url) {
+	axios.post(response_url, {
+			"delete_original":"true"
+		}).then(function(response) {
+			console.log(response);
+		}).catch(function (error) {
+			console.log(error);
+		});
 }
