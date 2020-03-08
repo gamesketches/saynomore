@@ -67,27 +67,36 @@ app.post('/interactive', (req,res) => {
 	const payload = JSON.parse(req.body.payload);
 	console.log(payload);
 	
-	let actionId = payload.actions[0].value;
-	
-	if(actionId == "click_begin") {
-		UpdateEphemeralMessage(payload.response_url, "Here we go!");
-		gameStatus = "playing";
-		BeginGame();
-	} else if(actionId == "click_join") {
-		participants.push(CreateNewParticipant(payload.user.id,payload.user.name));
-		UpdateJoinButton(payload.container.message_ts);
-	} else if(gameStatus == "playing") {
-		if(IsPlayerResponse(actionId)) {
-			ProcessPlayerResponses(payload.user.id, actionId);
-			UpdateEphemeralMessage(payload.response_url, "Got it!");
-		} else {
-			PostResponses(actionId);
-			ScorePoint(actionId);
-			if(gameStatus != "idle") {
-				CreateNewEventPrompt()
+	if(payload.type == "view_submission") {
+		let blockInfo = payload.view.blocks[1];
+		let userPrompt = payload.view.state.values[blockInfo.block_id][blockInfo.element.action_id].value;
+		CreateNewEventPrompt(userPrompt);
+	} else {
+		let actionId = payload.actions[0].value;
+		
+		if(actionId == "click_begin") {
+			UpdateEphemeralMessage(payload.response_url, "Here we go!");
+			BeginGame();
+		} else if(actionId == "click_join") {
+			participants.push(CreateNewParticipant(payload.user.id,payload.user.name));
+			UpdateJoinButton(payload.container.message_ts);
+		} else if(gameStatus == "playing") {
+			if(IsPlayerResponse(actionId)) {
+				ProcessPlayerResponses(payload.user.id, actionId);
+				UpdateEphemeralMessage(payload.response_url, "Got it!");
+			} else {
+				PostResponses(actionId);
+				ScorePoint(actionId);
+				if(gameStatus != "idle") {
+					if(RoundNumber() > 3) {
+						OpenModal(payload.trigger_id, blockTemplates.enterModal);
+					} else {
+						CreateNewEventPrompt()
+					}
+				}
 			}
-		}
-	}  
+		}  
+	}
 });
 
 app.post('/saynomore', (req, res) => {
@@ -160,29 +169,36 @@ async function BeginGame() {
 	console.log("server up at ", server.address());
 })();
 
-function CreateNewEventPrompt() {
-	curScenario = cards[Math.floor(cards.length * Math.random())];
+function CreateNewEventPrompt(playerPrompt) {
+	if(playerPrompt == null){
+		curScenario = cards[Math.floor(cards.length * Math.random())];
+	} else {
+		curScenario = playerPrompt;
+		console.log("curScenario is: " + curScenario);
+	}
+
 	PickNextPicker();
-	let promptBlock = [
-	{
-		"type": "section",
-		"text": {
-				"type": "plain_text",
-				"text": curScenario
-			}
-	},
-	{
-		"type": "actions",
-		"elements": []
-		}
-	];
+	
 	for(let j = 0; j < participants.length; j++) {
 		let player = participants[j];
-		if(player.id == picker) {
+		if(player.id == picker && participants.length > 1) {
 			player.responded = true;
 			continue;
 		}
 		player.responded = false;
+		let promptBlock = [
+			{
+				"type": "section",
+				"text": {
+						"type": "plain_text",
+						"text": curScenario
+					}
+			},
+			{
+				"type": "actions",
+				"elements": []
+				}
+		];
 		for(let i = 0; i < player.hand.length; i++) {
 			promptBlock[1].elements.push( {
 					"type": "button",
@@ -195,7 +211,6 @@ function CreateNewEventPrompt() {
 				});
 			}
 		PostEphemeral(curScenario, homeChannel, player.id, promptBlock);
-		promptBlock[1].elements = [];
 	}
 }
 
@@ -247,7 +262,7 @@ function PickWinner() {
 			}
 		];
 	for(let i = 0; i < participants.length; i++) {
-		if(participants[i].id != picker) {
+		if(participants.length == 1 || participants[i].id != picker) {
 			promptBlock[1].elements.push( {
 						"type": "button",
 						"text": {
@@ -298,6 +313,7 @@ function CreateNewParticipant(userId,userName) {
 }
 
 function PickNextPicker() {
+	if(participants.length == 1) return;
 	for(let i = 0; i < participants.length; i++) {
 		if(participants[i].id == picker) {
 			if(i + 1 == participants.length) {
@@ -337,6 +353,7 @@ async function FindChannelId(channelName) {
 			}
 		}
 	} catch(e) {
+		console.log("Error finding channel ID");
 		console.log(e);
 	}
 }
@@ -348,17 +365,20 @@ async function PostMessage(message, targetChannel, blockJson) {
 		sentMessages.push(res.ts);
 		console.log(res);
 	} catch(e) {
+		console.log("Error posting message");
 		console.log(e);
 	}
 }
 
 async function PostEphemeral(message, targetChannel, targetUser, blockJson) {
 	let args = {text:message, channel:targetChannel, user:targetUser, blocks:blockJson, attachments:null};
+	console.log(args);
 	try {
 		const res = await web.chat.postEphemeral(args);
 		sentEphemeral.push(res.response_url);
 		console.log(res);
 	} catch(e) {
+		console.log("Error posting ephemeral message");
 		console.log(e);
 	}
 }
@@ -370,6 +390,7 @@ function UpdateEphemeralMessage(response_url, newText) {
 		}).then(function (response) {
 			console.log(response);
 		}).catch(function (error) {
+			console.log("Error updating ephemeral message");
 			console.log(error);
 		});
 }
@@ -380,6 +401,25 @@ function DeleteEphemeralMessage(response_url) {
 		}).then(function(response) {
 			console.log(response);
 		}).catch(function (error) {
+			console.log("Error deleting ephmeral message");
 			console.log(error);
 		});
+}
+
+async function OpenModal(triggerId, modal) {
+	let args = {trigger_id:triggerId, view:modal}
+	try {
+		const res = await web.views.open(args);
+		console.log("opened modal");
+		console.log(res);
+	} catch(e) {
+		console.log("Error opening modal");
+		console.log(e);
+	}
+};
+
+function RoundNumber() {
+	let count = 0;
+	participants.forEach(function(player) { count += player.score;});
+	return count;
 }
