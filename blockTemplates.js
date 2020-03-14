@@ -70,3 +70,40 @@ exports.enterModal =
 		}
 	]
 };
+
+exports.enterResponseModal = 
+	{
+	"type": "modal",
+	"title": {
+		"type": "plain_text",
+		"text": "Make your own response",
+		"emoji": true
+	},
+	"submit": {
+		"type": "plain_text",
+		"text": "Submit",
+		"emoji": true
+	},
+	"close": {
+		"type": "plain_text",
+		"text": "Cancel",
+		"emoji": true
+	},
+	"blocks": [
+		{
+			"type": "divider"
+		},
+		{
+			"type": "input",
+			"label": {
+				"type": "plain_text",
+				"text": "Respond to the prompt below",
+				"emoji": true
+			},
+			"element": {
+				"type": "plain_text_input",
+				"multiline": true
+			}
+		}
+	]
+};

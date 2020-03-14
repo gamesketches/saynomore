@@ -27,6 +27,7 @@ let curScenario = "";
 let picker = "";
 let sentMessages = [];
 let sentEphemeral = [];
+let customThreshold = 1;
 
 fs.createReadStream('OptionAndScenarioCards.csv')
 	.pipe(csv())
@@ -68,9 +69,15 @@ app.post('/interactive', (req,res) => {
 	console.log(payload);
 	
 	if(payload.type == "view_submission") {
-		let blockInfo = payload.view.blocks[1];
-		let userPrompt = payload.view.state.values[blockInfo.block_id][blockInfo.element.action_id].value;
-		CreateNewEventPrompt(userPrompt);
+		if(payload.view.title.text == blockTemplates.enterModal.title.text) {
+			let blockInfo = payload.view.blocks[1];
+			let userPrompt = payload.view.state.values[blockInfo.block_id][blockInfo.element.action_id].value;
+			CreateNewEventPrompt(userPrompt);
+		} else if(payload.view.title.text == blockTemplates.enterResponseModal.title.text) {
+			let blockInfo = payload.view.blocks[1];
+			let userResponse = payload.view.state.values[blockInfo.block_id][blockInfo.element.action_id].value;
+			ProcessCustomResponse(payload.user.id, userResponse);
+		}
 	} else {
 		let actionId = payload.actions[0].value;
 		
@@ -78,8 +85,11 @@ app.post('/interactive', (req,res) => {
 			UpdateEphemeralMessage(payload.response_url, "Here we go!");
 			BeginGame();
 		} else if(actionId == "click_join") {
-			participants.push(CreateNewParticipant(payload.user.id,payload.user.name));
+			AddParticipant(payload.user.id, payload.user.name);
 			UpdateJoinButton(payload.container.message_ts);
+		} else if(actionId == "Make Your Own") {
+			OpenModal(payload.trigger_id, blockTemplates.enterResponseModal);
+			UpdateEphemeralMessage(payload.response_url, "Got it!");
 		} else if(gameStatus == "playing") {
 			if(IsPlayerResponse(actionId)) {
 				ProcessPlayerResponses(payload.user.id, actionId);
@@ -88,7 +98,7 @@ app.post('/interactive', (req,res) => {
 				PostResponses(actionId);
 				ScorePoint(actionId);
 				if(gameStatus != "idle") {
-					if(RoundNumber() > 3) {
+					if(RoundNumber() > customThreshold) {
 						OpenModal(payload.trigger_id, blockTemplates.enterModal);
 					} else {
 						CreateNewEventPrompt()
@@ -109,7 +119,7 @@ app.post('/saynomore', (req, res) => {
 });
 
 async function StartGame(channel, starter) {
-	let joinBlock = blockTemplates.joinBlock;
+	let joinBlock = JSON.parse(JSON.stringify(blockTemplates.joinBlock));
 	let startBlock = blockTemplates.beginBlock;
 		
 	PostMessage("Click to join", channel, joinBlock);
@@ -121,7 +131,7 @@ async function StartGame(channel, starter) {
 };
 
 async function UpdateJoinButton(timestamp) {
-	let joinBlock = blockTemplates.joinBlock;
+	let joinBlock = JSON.parse(JSON.stringify(blockTemplates.joinBlock));
 	
 	let contextBlock = {
 		"type":"context",
@@ -183,6 +193,7 @@ function CreateNewEventPrompt(playerPrompt) {
 		let player = participants[j];
 		if(player.id == picker && participants.length > 1) {
 			player.responded = true;
+			PostEphemeral("You're picking this round! Sit tight while people post their responses!", homeChannel, player.id);
 			continue;
 		}
 		player.responded = false;
@@ -200,14 +211,16 @@ function CreateNewEventPrompt(playerPrompt) {
 				}
 		];
 		for(let i = 0; i < player.hand.length; i++) {
+			let cardText = player.hand[i];
+			if(RoundNumber() > customThreshold && i == player.hand.length -1) cardText = "Make Your Own";
 			promptBlock[1].elements.push( {
 					"type": "button",
 					"text": {
 						"type": "plain_text",
 						"emoji": true,
-						"text": player.hand[i] 
+						"text": cardText 
 					},
-					"value": player.hand[i] 
+					"value": cardText
 				});
 			}
 		PostEphemeral(curScenario, homeChannel, player.id, promptBlock);
@@ -225,26 +238,43 @@ function IsPlayerResponse(actionId) {
 
 function ProcessPlayerResponses(userId, actionId) {
 	for(let i = 0; i < participants.length; i++) {
-				let player = participants[i];
-				if(player.id == userId) {
-					player.response = actionId;
-					player.hand.splice(player.hand.indexOf(player.response),1,DrawReactionCard()); 
-					player.responded = true;
-					participants[i] = player;
-					console.log(participants);
-					break;
-				}
-			}
-			let allResponded = true;
-			for(let i = 0; i < participants.length; i++) {
-				if(!participants[i].responded) {
-					console.log("someone hasn't responded!");
-					allResponded = false;
-				}
-			}
-			if(allResponded) {
-				PickWinner();
-			}
+		let player = participants[i];
+		if(player.id == userId) {
+			player.response = actionId;
+			player.hand.splice(player.hand.indexOf(player.response),1,DrawReactionCard()); 
+			player.responded = true;
+			participants[i] = player;
+			console.log(participants);
+			break;
+		}
+	}
+	CheckAllResponded();
+}
+
+function ProcessCustomResponse(userId, responseText) {
+	for(let i = 0; i < participants.length; i++) {
+		let player = participants[i];
+		if(player.id == userId) {
+			player.response = responseText;
+			player.responded = true;
+			participants[i] = player;
+			break;
+		}
+	}
+	CheckAllResponded();
+}
+
+function CheckAllResponded() {
+	let allResponded = true;
+	for(let i = 0; i < participants.length; i++) {
+		if(!participants[i].responded) {
+			console.log("someone hasn't responded!");
+			allResponded = false;
+		}
+	}
+	if(allResponded) {
+		PickWinner();
+	}
 }
 
 function PickWinner() {
@@ -304,6 +334,15 @@ function DrawReactionCard() {
 	return reactions[Math.floor(Math.random() * reactions.length)];
 }
 
+function AddParticipant(userId, userName) {
+	for(let i =0; i < participants.length; i++) {
+		if(participants[i].id == userId) {
+			return;
+		}
+	}
+	participants.push(CreateNewParticipant(userId, userName));
+}
+	
 function CreateNewParticipant(userId,userName) {
 	let newHand = [];
 	for(let i = 0; i < 5; i++) {
