@@ -23,7 +23,7 @@ let curScenario = "";
 let picker = "";
 let sentMessages = [];
 let sentEphemeral = [];
-let customThreshold = 1;
+let customThreshold = 5;
 
 slackInteractions.action({type:'message_action' }, (payload, respond) => {
 	console.log("payload", payload);
@@ -163,7 +163,7 @@ async function BeginGame() {
 
 function CreateNewEventPrompt(playerPrompt) {
 	if(playerPrompt == null){
-		curScenario = contentManager.DrawScenarioCard();
+		curScenario = contentManager.DrawScenarioCard(RoundNumber());
 	} else {
 		curScenario = playerPrompt;
 		console.log("curScenario is: " + curScenario);
