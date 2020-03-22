@@ -1,96 +1,136 @@
-Scenario,SayNo,Reaction
-Your boyfriend wants you to call him Daddy.,I have something to show you in private. Can you come over to my place tonight?,Act distracted
- Your boyfriend has been showering you with love and attention. He keeps telling you he'll give you anything you need. ,If you're in love with me you'd do what I want. Are you in love with me?,All signs point to no
-Your parents have been fighting at home. Your latest crush offers for you to stay at his place.,I know a way for you to make some easy money. Want to give it a try?,Ask a friend
-The guy you have a big crush is having money problems. He needs your help and asks you for a favor.,The fight last night was your fault. Don't you dare tell anybody. Ok?,Ask your dad
-A guy you don't know requests to be your friend on Facebook. ,"You are mine. I don't want you to talk to anybody from school but me. You can do that, right?",Awesome
-Your guy gave you a new phone. Now you can share secret text messages and pictures just between you two.,You seem pretty upset. Wanna take a shot of vodka or smoke something?,Awkward
-You realize the guy you've been seeing is older than you thought.,You're so beautiful. I bet some guys on this website are interested in you. Wanna try it out?,Aww yeah
-You're at a party and people are taking turns giving one guy sexual favors.,,"Baby, we need to talk"
-A guy you just met at a party asks to take you for dinner.,,Be honest
-A guy you just met is sexting you.,,Bitch slap
-A guy you met at a party texts you the next day. You don't remember giving him your phone number.,,Break up
-"A guy you really like asks you to pay him back for a gift he bought you last week. If you don't do it, he might break up with you.",,Brush it off
-A random guy at the party asks you if want to go smoke with him.,,Call a friend
-Porn pops up on your boyfriends computer. ,,Call a hotline
-The guy you've been dating loves it when you dress up. He wants to pay to get your nails done.,,Call for help
-The person you've been going out with starts driving somewhere you don't recognize.,,Confide in your mom
-You are being followed by a group of older boys.,,Cool
-You meet a cute boy. He offers to hold your purse and wallet with your ID in it. ,,Count me in
-You notice your friend has a few more bruises and swelling than normal. She's avoiding talking about it. ,,Count me out
-"You sign into a chat room. A message pops up asking questions like ""Where do you live?"" ""How old are you?""",,Creeper
-The guy you're dating said he loves you. Now he's acting differently.,,Deal with it
-You're approached a group of guys you don't know at the mall.,,Disgusting
-You're surfing the internet with a friend. She dares you to take your shirt off for a live webcam.,,Don't call me
-"You're the new girl at school, and you get invited to a party by a cute guy. When you show up, you're the only one there. ",,Dump him
-"You've been obsessing over a guy you met outside of school. You're not sure where he's from, but he knows exactly the right times to show up.",,Enjoy it
-"Your best friend is asking you to keep a secret, but you think she's in trouble.",,Excuse me!
-Your best girlfriend gets repeated calls from the new guy she is seeing. ,,Fart and dart
-Your best girlfriend is bragging about the older guy she is dating.,,Finally
-The person you're dating gets frustrated and hits you. Then immediately apologizes. ,,Find a way to bail
-Your boyfriend gives you a bracelet and you have no idea why.,,Find out more
-Your boyfriend gives you a necklace with the word LOVE on it. You've been dating for three weeks.,,Find your counselor
-Your boyfriend pulls out his phone while you're messing around. ,,Flirt back
-Your boyfriend takes pictures of you. He shows them to his friends.,,Frenemy
-The person you're dating thinks you could be a model and wants to set-up a photoshoot for your portfolio.,,Fun alert
-Your boyfriend wants to have sex. You've just started dating.,,Get a life
-Your boyfriend wants you to call him more often.,,Get lost
-Your boyfriend wants you to strip for him.,,Get out of there
-Your mom keeps bugging you about where you've been after school.,,Girl talk
-"You’re making out but half way through, you just don’t want to anymore.",,Good thing I'm wearing makeup
-A friend buys you a gift you know they cannot afford.,,Hell no
-Someone you’ve been hanging out with passes out on the couch at a party.,,Hell yeah
-You see your friend leave with a guy that you know is a jerk.,,Help
-,,Hot mess
-,,I didn't shave my legs
-,,I do what I want
-,,I don't care 
-,,I don't know 
-,,I'll think about it
-,,I'm allergic to idiots
-,,I'm busy
-,,I'm confused
-,,I'm getting my period
-,,I'm outta here
-,,I'm uncomfortable
-,,Ignore it
-,,Inappropriate
-,,It's no big deal
-,,Keep silent
-,,Laugh it off
-,,LMAO
-,,Loser
-,,Maybe later
-,,Mind your own business
-,,No Thanks
-,,Not again
-,,Not in a million years
-,,OMG
-,,Pervert
-,,Pretend to be sleeping
-,,Pretend you're busy
-,,Rely on a friend
-,,Sassy and classy
-,,Seems like fun
-,,Seems normal
-,,Share with a teacher
-,,Smile and nod
-,,Snapchat
-,,So what
-,,Stand up for myself
-,,Stranger danger
-,,Sugar Daddy
-,,"Sure, why not"
-,,Tell the truth
-,,Text a hotline
-,,Too much information
-,,Too much too soon
-,,Twerk
-,,Walk away
-,,"Whatever it is, I'm in"
-,,Who cares
-,,Wink
-,,Woah! Woah!
-,,WTF
-,,Yay
-,,You wish
+Scenario,Stage,Reaction,Response,Emotion
+Your boyfriend wants you to call him Daddy.,,Act distracted,Action,N
+Your boyfriend has been showering you with love and attention. He keeps telling you he'll give you anything you need. ,Grooming & Gaming,"""All signs point to no.""",Response,N
+Your parents have been fighting at home. Your latest crush offers for you to stay at his place.,Grooming & Gaming,Ask a friend,Action,N
+The guy you have a big crush is having money problems. He needs your help and asks you for a favor.,Exploitation,Ask your dad,Action,N
+A guy you don't know adds you on Tik Tok. ,,"""Awesome!""",Response,N
+Your guy gave you a new phone. Now you can share secret text messages and pictures just between you two.,Grooming & Gaming,"""Awkward.""",Response,N
+You realize the guy you've been seeing is older than you thought.,,"""Aww yeah.""",Response,N
+You're at a party and people are taking turns giving one guy sexual favors.,,"""Baby, we need to talk.""",Response,N
+A guy you just met at a party asks to take you for dinner.,,Be honest,Action,N
+A guy you just met is sexting you.,sexting,Bitch slap,?,N
+A guy you met at a party texts you the next day. You don't remember giving him your phone number.,Luring? ,Break up,Action,N
+"A guy you really like asks you to pay him back for a gift he bought you last week. If you don't do it, he might break up with you.",Exploitation ?,Brush it off,Action,Ne
+A random guy at the party asks you if want to go smoke with him.,,Call a friend,Action,Ne
+Porn pops up on your boyfriends computer. ,,Call a hotline,Action,P
+The guy you've been dating loves it when you dress up. He wants to pay to get your nails done.,Grooming & Gaming,Call for help,Action,N
+The person you've been going out with starts driving somewhere you don't recognize.,,Confide in your mom,Action,Ne
+You are being followed by a group of older boys.,,"""Cool.""",Response,Ne
+You meet a cute boy. He offers to hold your purse and wallet with your ID in it. ,,"""Count me in!""",Response,N
+You notice your friend has a few more bruises and swelling than normal. She's avoiding talking about it. ,,"""Count me out.""",Response,Ne
+"A message pops up on Instagram. ""Where do you live?"" ""How old are you?""",,"""Creeper.""",Response,Ne
+The guy you're dating said he loves you. Now he's acting differently.,Coercion & Manipulation ? ,Deal with it,Action,Ne
+You're approached a group of guys you don't know at the mall.,,Disgusting,Response,N
+You're surfing the internet with a friend. She dares you to take your shirt off for a live webcam.,,"""Don't call me.""",Response,Ne
+"You're the new girl at school, and you get invited to a party by a cute guy. When you show up, you're the only one there. ",,Dump him,Action,N
+"You've been obsessing over a guy you met outside of school. You're not sure where he's from, but he knows exactly the right times to show up.",Luring,Enjoy it,Action,Ne
+"Your best friend is asking you to keep a secret, but you think she's in trouble.",,"""Excuse me!""",Response,Ne
+Your best girlfriend gets repeated calls from the new guy she is seeing. ,,Fart and dart,Action,Ne
+Your best girlfriend is bragging about the older guy she is dating.,,"""Finally.""",Response,Ne
+The person you're dating gets frustrated and hits you. Then immediately apologizes. ,,Find a way to bail,Action,P
+Your boyfriend gives you a bracelet and you have no idea why.,Grooming & Gaming,Find out more,Action,N
+Your boyfriend gives you a necklace with the word LOVE on it. You've been dating for three weeks.,Grooming & Gaming,Find your counselor,Action,N
+Your boyfriend pulls out his phone while you're messing around. ,Coercion & Manipulation,Flirt back,Action,N
+Your boyfriend takes private pictures of you. He shows them to his friends.,Coercion & Manipulation ? ,"""Frenemy.""",Response,Ne
+The person you're dating thinks you could be a model and wants to set-up a photoshoot for your portfolio.,Grooming & Gaming,"""Fun alert.""",Response,N
+Your boyfriend wants to have sex. You've just started dating.,,"""Get a life.""",Response,N
+Your boyfriend wants you to call him more often.,,"""Get lost.""",Response,Ne
+Your boyfriend wants you to strip for him.,,Get out of there,Action,N
+Your mom keeps bugging you about where you've been after school.,,Girl talk,?,P
+"You’re making out but half way through, you just don’t want to anymore.",,"""Good thing I'm wearing makeup.""",Response,Ne
+A friend buys you a gift you know they cannot afford.,Exploitation,"""Hell no.""",Response,Ne
+Someone you’ve been hanging out with passes out on the couch at a party.,,"""Hell yeah.""",Response,Ne
+You see your friend leave with a guy that you know is a jerk.,,"""Help!""",Response,N
+Your friend knows things have been rought at home. He lets you know he's always there if you need to talk.,Luring,"""Hot mess.""",Response,
+You told your boyfriend your parents wouldn't buy you a new iPhone and he surprises you with one.,Grooming & Gaming,"""I didn't shave my legs.""",Response,P
+"Out of nowhere, your boyfriend suddenly seems distant.",Coercion & Manipulation,"""I do what I want.""",Response,P
+"Your boyfriend asks you to hold onto a bag of cocaine. If you don't, he says there will be consequences.",Coercion & Manipulation,"""I don't care.""",Response,N
+Your boyfriend was really generous when you first started dating. Now he only gives you gifts after you have sex.,Coercion & Manipulation,"""I don't know.""",Response,P
+"Your boyfriend demands that you record a threesome video. If you don't, he'll tell all of your friends about your sex life.",Coercion & Manipulation,"""I'll think about it.""",Response,P
+"Your boyfriend tells you that you owe him $25,000 for all of the gifts he's given you. He's demanding you pay him back.",,"""I'm allergic to idiots.""",Response,N
+"You tell your boyfriend no, but he keeps begging you and making you feel guilty.",consent,"""I'm busy.""",Response,P
+Your boyfriend thinks you can go viral if you take some nude photos with him.,sexting,"""I'm confused.""",Response,P
+You are curious about sexual stuff your boyfriend wants to try.,,"""I'm getting my period.""",Response,P
+You find explicit photos of your boyfriend's ex-girlfriend on his phone.,sexting,I'm outta here,Action,Ne
+You think you boyfriend might be secreatly recording you when you're being intimate.,sexting,"""I'm uncomfortable.""",Response,P
+"Your boyfriend keeps closing the door when you're together, even though you've told them your parents don't allow it.",consent,Ignore it,Action,N
+,,"""Inappropriate.""",Response,P
+,,"""It's no big deal.""",Response,P
+,,Keep silent,Action,Ne
+,,Laugh it off,Action,P
+,,"""LMAO""",Response,N
+,,"""Loser!""",Response,P
+,,"""Maybe later.""",Response,N
+,,"""Mind your own business.""",Response,N
+,,"""No Thanks.""",Response,P
+,,"""Not again.""",Response,P
+,,"""Not in a million years.""",Response,Ne
+,,"""OMG!""",Response,P
+,,"""Pervert.""",Response,Ne
+,,Pretend to be sleeping,Action,N
+,,Pretend you're busy,Action,Ne
+,,Rely on a friend,Action,N
+,,Sassy and classy,?,P
+,,"""Seems like fun.""",Response,P
+,,"""Seems normal.""",Response,P
+,,Share with a teacher,Action,N
+,,"""Smile and nod.""",Response,Ne
+,,Snapchat that,Action,N
+,,"""So what?""",Response,N
+,,Stand up for myself,Action,N
+,,"""Stranger danger!""",Response,Ne
+,,"""Sugar Daddy.""",Response,P
+,,"""Sure, why not.""",Response,P
+,,Tell the truth,Action,P
+,,Text a hotline,Action,P
+,,"""Too much information.""",Response,P
+,,"""Too much too soon.""",Response,P
+,,Twerk instead,Action,P
+,,Walk away,Action,P
+,,"""Whatever it is, I'm in.""",Response,P
+,,"""Who cares?""",Response,P
+,,Wink,Action,P
+,,"""Woah! Woah!""",Response,Ne
+,,"""WTF""",Response,N
+,,"""Yay!""",Response,P
+,,"""You wish.""",Response,P
+,,"Run, don't walk!",Action,P
+,,Call the police ?,Action,Ne
+,,Take it back,Action,P
+,,Change the subject,Action,N
+,,"""Out of control.""",Response,
+,,"""Absolutely not.""",Response,
+,,Delete it,Action,
+,,"""Feeling pressured.""",Response,
+,,"""Stalker status.""",Response,
+,,"""Dying inside.""",Response,
+,,"""I'd rather be single.""",Response,
+,,"""Overly controlling.""",Response,
+,,"""It's up to me.""",Response,
+,,Time for selfcare,Action,
+,,"""I'm stronger than you think.""",Response,
+,,"""Overly obsessive.""",Response,
+,,Throw shade,Action,
+,,"""Goodbye.""",Response,
+,,"""Throw up in my mouth a little.""",Response,
+,,Violated,?,
+,,Text a friend,Action,
+,,Text my parents,Action,
+,,Listen to my instincts,Action,
+,,"""Overtexting, much?""",Response,
+,,Understand a different perspective,Action,
+,,"""Respect my privacy.""",Response,
+,,"""Resepct my body.""",Response,
+,,"""Respect my yes.""",Response,
+,,"""Respect my no.""",Response,
+,,"""Too prude for that!""",Response,
+,,Deny the rumor,Action,
+,,Turn off your phone,Action,
+,,"""I have friends outside of my relationship.""",Response,
+,,"""How many times do I have to say no?""",Response,
+,,Phone a friend,Action,
+,,Confide in a friend,Action,
+,,Ask a friend,Action,
+,,Come clean about how I feel.,Action,
+,,Find some distance,Action,
+,,Transfer schools,Action,

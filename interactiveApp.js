@@ -3,11 +3,9 @@ const {createMessageAdapter} = require('@slack/interactive-messages');
 const bodyParser = require('body-parser');
 const express = require('express');
 const app = express();
-const csv = require('csv-parser');
-const fs = require('fs');
 const axios = require('axios');
-const results = [];
 const blockTemplates = require ('./blockTemplates');
+const contentManager = require('./contentManager');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended:true}));
@@ -21,27 +19,11 @@ const winScore = 5;
 let gameStatus = "idle";
 let participants = [];
 let homeChannel = "";
-let cards = [];
-let reactions = [];
 let curScenario = "";
 let picker = "";
 let sentMessages = [];
 let sentEphemeral = [];
 let customThreshold = 1;
-
-fs.createReadStream('OptionAndScenarioCards.csv')
-	.pipe(csv())
-	.on('data', (data) => results.push(data))
-	.on('end', () => {
-		console.log("Parsed card data");
-		for(let i = 0; i < results.length; i++) {
-			if(results[i].Scenario.length > 0) cards.push(results[i].Scenario);
-			if(results[i].Reaction.length > 0) reactions.push(results[i].Reaction);
-		}
-	});
-
-
-
 
 slackInteractions.action({type:'message_action' }, (payload, respond) => {
 	console.log("payload", payload);
@@ -181,7 +163,7 @@ async function BeginGame() {
 
 function CreateNewEventPrompt(playerPrompt) {
 	if(playerPrompt == null){
-		curScenario = cards[Math.floor(cards.length * Math.random())];
+		curScenario = contentManager.DrawScenarioCard();
 	} else {
 		curScenario = playerPrompt;
 		console.log("curScenario is: " + curScenario);
@@ -241,7 +223,7 @@ function ProcessPlayerResponses(userId, actionId) {
 		let player = participants[i];
 		if(player.id == userId) {
 			player.response = actionId;
-			player.hand.splice(player.hand.indexOf(player.response),1,DrawReactionCard()); 
+			player.hand.splice(player.hand.indexOf(player.response),1,contentManager.DrawReactionCard()); 
 			player.responded = true;
 			participants[i] = player;
 			console.log(participants);
@@ -329,11 +311,6 @@ function PostResponses() {
 	PostMessage(response, homeChannel);
 }
 		
-
-function DrawReactionCard() {
-	return reactions[Math.floor(Math.random() * reactions.length)];
-}
-
 function AddParticipant(userId, userName) {
 	for(let i =0; i < participants.length; i++) {
 		if(participants[i].id == userId) {
@@ -346,7 +323,7 @@ function AddParticipant(userId, userName) {
 function CreateNewParticipant(userId,userName) {
 	let newHand = [];
 	for(let i = 0; i < 5; i++) {
-		newHand.push(DrawReactionCard());
+		newHand.push(contentManager.DrawReactionCard());
 	}
 	return {id:userId, name:userName, hand:newHand, responded:false, score:0};
 }
