@@ -26,7 +26,8 @@ let sentEphemeral = [];
 let customThreshold = 5;
 
 slackInteractions.action({type:'message_action' }, (payload, respond) => {
-	console.log("payload", payload);
+	//console.log("payload", payload);
+	console.log("received action payload");
 });
 
 app.get('/', (req, res) => {
@@ -39,7 +40,7 @@ app.post('/actions', (req,res) => {
 	const payload = JSON.parse(req.body.payload);
 	const {type, user, submission} = payload;
 
-	console.log(payload);
+	//console.log(payload);
 	res.sendStatus(200);
 });
 
@@ -48,7 +49,7 @@ app.post('/interactive', (req,res) => {
 	
 	res.send('');
 	const payload = JSON.parse(req.body.payload);
-	console.log(payload);
+	//console.log(payload);
 	
 	if(payload.type == "view_submission") {
 		if(payload.view.title.text == blockTemplates.enterModal.title.text) {
@@ -73,19 +74,19 @@ app.post('/interactive', (req,res) => {
 			OpenModal(payload.trigger_id, blockTemplates.enterResponseModal);
 			UpdateEphemeralMessage(payload.response_url, "Got it!");
 		} else if(gameStatus == "playing") {
-			if(IsPlayerResponse(actionId)) {
+			if(actionId == "click_next_round") {
+				if(RoundNumber() > customThreshold) {
+					OpenModal(payload.trigger_id, blockTemplates.enterModal);
+				} else {
+					CreateNewEventPrompt();
+				}
+			} else if(IsPlayerResponse(actionId)) {
 				ProcessPlayerResponses(payload.user.id, actionId);
 				UpdateEphemeralMessage(payload.response_url, "Got it!");
-			} else {
+			}  else {
 				PostResponses(actionId);
 				ScorePoint(actionId);
-				if(gameStatus != "idle") {
-					if(RoundNumber() > customThreshold) {
-						OpenModal(payload.trigger_id, blockTemplates.enterModal);
-					} else {
-						CreateNewEventPrompt()
-					}
-				}
+				SetNextRoundButton(payload.response_url);
 			}
 		}  
 	}
@@ -97,7 +98,7 @@ app.post('/saynomore', (req, res) => {
 	homeChannel = req.body.channel_id;
 	res.send('');
 	StartGame(req.body.channel_id,req.body.user_id);
-	console.log(req.body);
+	//console.log(req.body);
 });
 
 async function StartGame(channel, starter) {
@@ -117,10 +118,15 @@ async function UpdateJoinButton(timestamp) {
 	
 	let contextBlock = {
 		"type":"context",
-		"elements": []
+		"elements": [
+			{
+				"type":"plain_text",
+				"text": participants.length + " players"
+			}
+		]
 	};
 	
-	for(let i = 0; i < participants.length; i++) {
+	/*for(let i = 0; i < participants.length; i++) {
 		let args = {user:participants[i].id};
 		try {
 			const res = await web.users.profile.get(args);
@@ -133,7 +139,7 @@ async function UpdateJoinButton(timestamp) {
 			console.log(e);
 		}
 		
-	}
+	}*/
 
 	joinBlock.push(contextBlock);
 	let arg = {channel:homeChannel, text:"Join", ts:timestamp, blocks:joinBlock};
@@ -264,8 +270,8 @@ function PickWinner() {
 		{
 			"type": "section",
 			"text": {
-					"type": "plain_text",
-					"text": "Pick the best response to the current scenario!"
+					"type": "mrkdwn",
+					"text": "Pick the best response to the following scenario:\n\"*" + curScenario + "*\""
 				}
 		},
 		{
@@ -287,6 +293,34 @@ function PickWinner() {
 		}
 	}
 	PostEphemeral("Pick a winner", homeChannel, picker, promptBlock);
+}
+
+function SetNextRoundButton(response_url) {
+   nextRoundBlock = [{
+       "type":"section",
+       "text": {
+           "type":"plain_text",
+           "text":"Click here when everyone is ready to keep playing!"
+       },
+       "accessory": {
+           "type": "button",
+           "text": {
+               "type": "plain_text",
+               "text": "Being Next Round"
+           },
+           "value": "click_next_round"
+       }
+   }];
+	axios.post(response_url, {
+			"replace_original":"true",
+			"text": "Click here when everyone is ready",
+			"blocks": nextRoundBlock
+		}).then(function (response) {
+			//console.log(response);
+		}).catch(function (error) {
+			console.log("Error updating ephemeral message");
+			console.log(error);
+		});
 }
 
 function ScorePoint(winnerId) {
@@ -392,7 +426,7 @@ async function PostEphemeral(message, targetChannel, targetUser, blockJson) {
 	try {
 		const res = await web.chat.postEphemeral(args);
 		sentEphemeral.push(res.response_url);
-		console.log(res);
+		//console.log(res);
 	} catch(e) {
 		console.log("Error posting ephemeral message");
 		console.log(e);
@@ -404,7 +438,7 @@ function UpdateEphemeralMessage(response_url, newText) {
 			"replace_original":"true",
 			"text": newText 
 		}).then(function (response) {
-			console.log(response);
+			//console.log(response);
 		}).catch(function (error) {
 			console.log("Error updating ephemeral message");
 			console.log(error);
@@ -415,7 +449,7 @@ function DeleteEphemeralMessage(response_url) {
 	axios.post(response_url, {
 			"delete_original":"true"
 		}).then(function(response) {
-			console.log(response);
+			//console.log(response);
 		}).catch(function (error) {
 			console.log("Error deleting ephmeral message");
 			console.log(error);
@@ -427,7 +461,7 @@ async function OpenModal(triggerId, modal) {
 	try {
 		const res = await web.views.open(args);
 		console.log("opened modal");
-		console.log(res);
+		//console.log(res);
 	} catch(e) {
 		console.log("Error opening modal");
 		console.log(e);

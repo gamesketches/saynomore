@@ -1,5 +1,48 @@
 exports.joinBlock = [   
- {   
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Let's play Say No More :wave:"
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "What's normal in a healthy romantic realtionship? Find out what your friends think"
+			}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "• Your responses will be anonymous unless you win a round. \n • You will also get a chance to pick the winner of a round. \n • Ready to play?"
+				}
+		},
+		{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Confidentiality (or other mindset/agreement) is really important when playing. Click the button below to confirm you'll play by the rules:"
+				}
+		},
+		{
+		"type": "actions",
+		"elements": [
+		{
+			"type": "button",
+			"text": {
+				"type": "plain_text",
+				"text": "I agree to confidentiality.",
+				"emoji": true
+				},
+			"action_id": "click_join",
+			"value": "click_join"
+			}
+		]
+	}
+/* {   
 	 "type":"section",
 	 "text": {
 		 "type":"plain_text",
@@ -14,7 +57,7 @@ exports.joinBlock = [
 		 "action_id": "click_join",
 		 "value": "click_join"
 	 }
-   }
+   }*/
  ];
 
 exports.beginBlock = [
