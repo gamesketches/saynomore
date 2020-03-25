@@ -106,4 +106,20 @@ function DrawReactionCard() {
 	return deck[drawNum];
 }
 
-module.exports = {reactions,cards,DrawScenarioCard, DrawReactionCard};
+function WriteInteractions(interactions) {
+	let outputString = "";
+	interactions.forEach(function ( dataLine) {
+		outputString += dataLine.action + "," + dataLine.user + "," + dataLine.misc + "\n"
+	});
+	let dateObj = new Date();
+	let fileName = String(dateObj.getHours()) + ":" + String(dateObj.getMinutes()) + ".csv";
+	console.log(fileName);
+	fs.writeFile(fileName, outputString, function(err) {
+		if(err) console.log(err);
+		else console.log("successfully exported to " + fileName);
+		}
+	);
+}
+
+
+module.exports = {reactions,cards,DrawScenarioCard, DrawReactionCard,WriteInteractions};

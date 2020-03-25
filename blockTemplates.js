@@ -42,22 +42,6 @@ exports.joinBlock = [
 			}
 		]
 	}
-/* {   
-	 "type":"section",
-	 "text": {
-		 "type":"plain_text",
-		 "text":"Who wants to play Say No More?"
-	 },
-	 "accessory": {
-		 "type": "button",
-		 "text": {
-			 "type": "plain_text",
-			 "text": "Join"
-		 },
-		 "action_id": "click_join",
-		 "value": "click_join"
-	 }
-   }*/
  ];
 
 exports.beginBlock = [

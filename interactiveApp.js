@@ -24,6 +24,7 @@ let picker = "";
 let sentMessages = [];
 let sentEphemeral = [];
 let customThreshold = 5;
+let interactions = [];
 
 slackInteractions.action({type:'message_action' }, (payload, respond) => {
 	//console.log("payload", payload);
@@ -56,36 +57,43 @@ app.post('/interactive', (req,res) => {
 			let blockInfo = payload.view.blocks[1];
 			let userPrompt = payload.view.state.values[blockInfo.block_id][blockInfo.element.action_id].value;
 			CreateNewEventPrompt(userPrompt);
+			RecordInteraction("Made Custom Scenario", payload.user.name, userPrompt);
 		} else if(payload.view.title.text == blockTemplates.enterResponseModal.title.text) {
 			let blockInfo = payload.view.blocks[1];
 			let userResponse = payload.view.state.values[blockInfo.block_id][blockInfo.element.action_id].value;
 			ProcessCustomResponse(payload.user.id, userResponse);
+			RecordInteraction("Made Custom Response", payload.user.name, userPrompt);
 		}
 	} else {
 		let actionId = payload.actions[0].value;
 		
 		if(actionId == "click_begin") {
 			UpdateEphemeralMessage(payload.response_url, "Here we go!");
+			RecordInteraction("Began game", payload.user.name);
 			BeginGame();
 		} else if(actionId == "click_join") {
 			AddParticipant(payload.user.id, payload.user.name);
 			UpdateJoinButton(payload.container.message_ts);
+			RecordInteraction("Join game", payload.user.name);
 		} else if(actionId == "Make Your Own") {
 			OpenModal(payload.trigger_id, blockTemplates.enterResponseModal);
 			UpdateEphemeralMessage(payload.response_url, "Got it!");
 		} else if(gameStatus == "playing") {
 			if(actionId == "click_next_round") {
+				RecordInteraction("Started Next Round", payload.user.name);
 				if(RoundNumber() > customThreshold) {
 					OpenModal(payload.trigger_id, blockTemplates.enterModal);
 				} else {
 					CreateNewEventPrompt();
 				}
 			} else if(IsPlayerResponse(actionId)) {
+				RecordInteraction("Selected response", payload.user.name, actionId);
 				ProcessPlayerResponses(payload.user.id, actionId);
 				UpdateEphemeralMessage(payload.response_url, "Got it!");
 			}  else {
 				PostResponses(actionId);
 				ScorePoint(actionId);
+				RecordInteraction("Selected Winner", payload.user.name, actionId);
 				SetNextRoundButton(payload.response_url);
 			}
 		}  
@@ -229,7 +237,12 @@ function ProcessPlayerResponses(userId, actionId) {
 		let player = participants[i];
 		if(player.id == userId) {
 			player.response = actionId;
-			player.hand.splice(player.hand.indexOf(player.response),1,contentManager.DrawReactionCard()); 
+			player.hand.splice(player.hand.indexOf(player.response),1); 
+			let newCard = contentManager.DrawReactionCard();
+			while(player.hand.indexOf(newCard) > -1) {
+				newCard = contentManager.DrawReactionCard();
+			}
+			player.hand.push(newCard);
 			player.responded = true;
 			participants[i] = player;
 			console.log(participants);
@@ -332,6 +345,7 @@ function ScorePoint(winnerId) {
 				PostMessage("And with that they won the whole thing! Great game everyone! All messages will be deleted in 30 seconds", homeChannel);
 				gameStatus = "idle";
 				setTimeout(CleanUpGame, 30000);
+				contentManager.WriteInteractions(interactions);
 		     }
 		}
 	});
@@ -357,7 +371,11 @@ function AddParticipant(userId, userName) {
 function CreateNewParticipant(userId,userName) {
 	let newHand = [];
 	for(let i = 0; i < 5; i++) {
-		newHand.push(contentManager.DrawReactionCard());
+		let newCard = contentManager.DrawReactionCard();
+		while(newHand.indexOf(newCard) > -1) {
+			newCard = contentManager.DrawReactionCard();
+		}
+		newHand.push(newCard);
 	}
 	return {id:userId, name:userName, hand:newHand, responded:false, score:0};
 }
@@ -406,6 +424,13 @@ async function FindChannelId(channelName) {
 		console.log("Error finding channel ID");
 		console.log(e);
 	}
+}
+
+function RecordInteraction(actionString, userName, otherInfo) {
+	let newInteraction = {action:actionString, user:userName, misc: ""};
+	if(otherInfo != null) newInteraction.misc = otherInfo;
+
+	interactions.push(newInteraction);
 }
 
 async function PostMessage(message, targetChannel, blockJson) {
