@@ -91,7 +91,6 @@ app.post('/interactive', (req,res) => {
 				ProcessPlayerResponses(payload.user.id, actionId);
 				UpdateEphemeralMessage(payload.response_url, "Got it!");
 			}  else {
-				PostResponses(actionId);
 				ScorePoint(actionId);
 				RecordInteraction("Selected Winner", payload.user.name, actionId);
 				SetNextRoundButton(payload.response_url);
@@ -185,6 +184,11 @@ function CreateNewEventPrompt(playerPrompt) {
 
 	PickNextPicker();
 	
+	let scenarioBlock = CopyBlockTemplate(blockTemplates.scenario);
+	scenarioBlock[0].text.text = "Scenario #" + String(RoundNumber() + 1) + "\n:black_heart: " + curScenario + ":black_heart:";
+
+	PostMessage(curScenario, homeChannel, scenarioBlock);
+	
 	for(let j = 0; j < participants.length; j++) {
 		let player = participants[j];
 		if(player.id == picker && participants.length > 1) {
@@ -198,7 +202,7 @@ function CreateNewEventPrompt(playerPrompt) {
 				"type": "section",
 				"text": {
 						"type": "plain_text",
-						"text": curScenario
+						"text": "Pick how you would respond to the scenario above"
 					}
 			},
 			{
@@ -274,6 +278,7 @@ function CheckAllResponded() {
 		}
 	}
 	if(allResponded) {
+		PostResponses();
 		PickWinner();
 	}
 }
@@ -337,10 +342,14 @@ function SetNextRoundButton(response_url) {
 }
 
 function ScorePoint(winnerId) {
+	let roundEndBlocks = JSON.parse(JSON.stringify(blockTemplates.roundEnd));
+	console.log(roundEndBlocks[0].text);
 	participants.forEach(function(player) { 
 		if(player.id == winnerId){
 			 player.score++;
-			 PostMessage(player.name + " won this round with '" + player.response + "'!", homeChannel);
+			roundEndBlocks[0].text.text = ":trophy: " + player.name + " won this round with '" + player.response + "'!";
+			console.log(roundEndBlocks[0].text);
+			PostMessage(player.name + "won!", homeChannel, roundEndBlocks);
 			 if(player.score >= winScore) {
 				PostMessage("And with that they won the whole thing! Great game everyone! All messages will be deleted in 30 seconds", homeChannel);
 				gameStatus = "idle";
@@ -352,11 +361,21 @@ function ScorePoint(winnerId) {
 }
 
 function PostResponses() {
-	let response = "The Scenario: \n" + curScenario + "\nThe Responses:\n"
+	console.log(blockTemplates.responseList);
+	let response = CopyBlockTemplate(blockTemplates.responseList);
+	console.log(response);
 	for(let i = 0; i < participants.length; i++) {
-		response += participants[i].response + "\n";
+		response.splice(1,0,
+			{
+				"type":"section",
+				"text": {
+					"type":"mrkdwn",
+					"text": ":heavy_check_mark: " + participants[i].response
+				}
+			}
+		);
 	}
-	PostMessage(response, homeChannel);
+	PostMessage("messages", homeChannel, response);
 }
 		
 function AddParticipant(userId, userName) {
@@ -492,6 +511,10 @@ async function OpenModal(triggerId, modal) {
 		console.log(e);
 	}
 };
+
+function CopyBlockTemplate(targetTemplate) {
+	return JSON.parse(JSON.stringify(targetTemplate));
+}
 
 function RoundNumber() {
 	let count = 0;

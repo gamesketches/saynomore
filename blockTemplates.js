@@ -61,6 +61,50 @@ exports.beginBlock = [
 	 }
  }
 ];  
+
+exports.scenario = [
+			{
+				"type": "section",
+				"text": {
+					"type": "mrkdwn",
+					"text": ":black_heart: Here's the Scenario :black_heart:"
+				}
+			}
+];
+
+exports.responseList = [
+			{
+				"type": "section",
+				"text": {
+					"type": "mrkdwn",
+					"text": ":thinking_face: Here's how everyone responded:"
+				}
+			},
+				{
+				"type": "section",
+				"text": {
+					"type": "mrkdwn",
+					"text": ":alarm_clock: Wait for the winner of this round to be chosen!"
+				}
+			}
+];
+
+exports.roundEnd = [
+			{
+				"type": "section",
+				"text": {
+					"type": "mrkdwn",
+					"text": ":first_place: sam.von.ehren won this round with 'Ask your dad'!"
+				}
+			},
+				{
+				"type": "section",
+				"text": {
+					"type": "mrkdwn",
+					"text": ":tada: Get ready for the next scene."
+				}
+			}
+];
 exports.enterModal = 
 	{
 	"type": "modal",
