@@ -25,6 +25,7 @@ let sentMessages = [];
 let sentEphemeral = [];
 let customThreshold = 5;
 let interactions = [];
+let queuedMessages = [];
 
 slackInteractions.action({type:'message_action' }, (payload, respond) => {
 	//console.log("payload", payload);
@@ -172,6 +173,34 @@ async function BeginGame() {
 	const server = app.listen(3000);
 
 	console.log("server up at ", server.address());
+})();
+
+(async () => {
+	while(true) {
+		await Sleep(500);
+		while(queuedMessages.length > 0) {
+			if(queuedMessages[0].isEphemeral) {
+				try {
+					const res = await web.chat.postEphemeral(queuedMessages[0].msgArgs);
+					sentEphemeral.push(res.response_url);
+				} catch(e) {
+					console.log("Error posting ephemeral message");
+					console.log(e);
+				}
+			} else {
+				try {
+					const res = await web.chat.postMessage(queuedMessages[0].msgArgs);
+					sentMessages.push(res.ts);
+					console.log(res);
+				} catch(e) {
+					console.log("Error posting message");
+					console.log(e);
+				}
+			}
+			queuedMessages.shift();
+			Sleep(250);	
+		}
+	}
 })();
 
 function CreateNewEventPrompt(playerPrompt) {
@@ -454,27 +483,13 @@ function RecordInteraction(actionString, userName, otherInfo) {
 
 async function PostMessage(message, targetChannel, blockJson) {
 	let args = {text:message, channel:targetChannel, blocks:blockJson};
-	try {
-		const res = await web.chat.postMessage(args);
-		sentMessages.push(res.ts);
-		console.log(res);
-	} catch(e) {
-		console.log("Error posting message");
-		console.log(e);
-	}
+	queuedMessages.push({isEphemeral:false, msgArgs:args});
 }
 
 async function PostEphemeral(message, targetChannel, targetUser, blockJson) {
 	let args = {text:message, channel:targetChannel, user:targetUser, blocks:blockJson, attachments:null};
 	console.log(args);
-	try {
-		const res = await web.chat.postEphemeral(args);
-		sentEphemeral.push(res.response_url);
-		//console.log(res);
-	} catch(e) {
-		console.log("Error posting ephemeral message");
-		console.log(e);
-	}
+	queuedMessages.push({isEphemeral:true, msgArgs:args});
 }
 
 function UpdateEphemeralMessage(response_url, newText) {
@@ -520,4 +535,8 @@ function RoundNumber() {
 	let count = 0;
 	participants.forEach(function(player) { count += player.score;});
 	return count;
+}
+
+function Sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
 }
