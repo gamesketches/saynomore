@@ -15,7 +15,7 @@ const web = new WebClient(process.env.SLACK_BOT_TOKEN);
 const slackInteractions = createMessageAdapter(process.env.SLACK_SIGNING_SECRET);
 
 
-const winScore = 5;
+const winScore = 3;
 let gameStatus = "idle";
 let participants = [];
 let homeChannel = "";
@@ -394,15 +394,17 @@ function PostResponses() {
 	let response = CopyBlockTemplate(blockTemplates.responseList);
 	console.log(response);
 	for(let i = 0; i < participants.length; i++) {
-		response.splice(1,0,
-			{
-				"type":"section",
-				"text": {
-					"type":"mrkdwn",
-					"text": ":heavy_check_mark: " + participants[i].response
+		if(participants[i].id != picker) {
+			response.splice(1,0,
+				{
+					"type":"section",
+					"text": {
+						"type":"mrkdwn",
+						"text": ":heavy_check_mark: " + participants[i].response
+					}
 				}
-			}
-		);
+			);
+		}
 	}
 	PostMessage("messages", homeChannel, response);
 }

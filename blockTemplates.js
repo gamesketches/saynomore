@@ -10,7 +10,7 @@ exports.joinBlock = [
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "What's normal in a healthy romantic realtionship? Find out what your friends think"
+				"text": "What's normal in a healthy romantic relationship? Find out what your friends think"
 			}
 		},
 		{
