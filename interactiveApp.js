@@ -103,11 +103,22 @@ app.post('/interactive', (req,res) => {
 app.post('/saynomore', (req, res) => {
 	console.log("say no more post");
 	
+	InitializeGame();
 	homeChannel = req.body.channel_id;
 	res.send('');
 	StartGame(req.body.channel_id,req.body.user_id);
 	//console.log(req.body);
 });
+
+function InitializeGame() {
+	gameStatus = "idle";
+	participants = [];
+	homeChannel = "";
+	curScenario = "";
+	picker = "";
+	sentMessages = [];
+	sentEphemeral = [];
+}
 
 async function StartGame(channel, starter) {
 	let joinBlock = JSON.parse(JSON.stringify(blockTemplates.joinBlock));
@@ -241,8 +252,16 @@ function CreateNewEventPrompt(playerPrompt) {
 		];
 		for(let i = 0; i < player.hand.length; i++) {
 			let cardText = player.hand[i];
+			promptBlock.splice(1,0,
+				{
+					"type":"section",
+					"text": {
+						"type":"mrkdwn",
+						"text": ":heavy_check_mark: " + cardText
+					}
+				});
 			if(RoundNumber() > customThreshold && i == player.hand.length -1) cardText = "Make Your Own";
-			promptBlock[1].elements.push( {
+			promptBlock[promptBlock.length - 1].elements.splice(0,0,{
 					"type": "button",
 					"text": {
 						"type": "plain_text",
@@ -270,12 +289,7 @@ function ProcessPlayerResponses(userId, actionId) {
 		let player = participants[i];
 		if(player.id == userId) {
 			player.response = actionId;
-			player.hand.splice(player.hand.indexOf(player.response),1); 
-			let newCard = contentManager.DrawReactionCard();
-			while(player.hand.indexOf(newCard) > -1) {
-				newCard = contentManager.DrawReactionCard();
-			}
-			player.hand.push(newCard);
+			player.hand = CreateNewHand();
 			player.responded = true;
 			participants[i] = player;
 			console.log(participants);
@@ -328,7 +342,16 @@ function PickWinner() {
 		];
 	for(let i = 0; i < participants.length; i++) {
 		if(participants.length == 1 || participants[i].id != picker) {
-			promptBlock[1].elements.push( {
+			promptBlock.splice(1,0,
+				{
+					"type":"section",
+					"text": {
+						"type":"mrkdwn",
+						"text": ":heavy_check_mark: " + participants[i].response
+					}
+				});
+
+			promptBlock[promptBlock.length - 1].elements.splice(0,0, {
 						"type": "button",
 						"text": {
 							"type": "plain_text",
@@ -358,7 +381,7 @@ function SetNextRoundButton(response_url) {
            "value": "click_next_round"
        }
    }];
-	axios.post(response_url, {
+	/*axios.post(response_url, {
 			"replace_original":"true",
 			"text": "Click here when everyone is ready",
 			"blocks": nextRoundBlock
@@ -367,7 +390,8 @@ function SetNextRoundButton(response_url) {
 		}).catch(function (error) {
 			console.log("Error updating ephemeral message");
 			console.log(error);
-		});
+		});*/
+	PostEphemeral("Agree to begin the next round", homeChannel, picker, nextRoundBlock);
 }
 
 function ScorePoint(winnerId) {
@@ -419,14 +443,7 @@ function AddParticipant(userId, userName) {
 }
 	
 function CreateNewParticipant(userId,userName) {
-	let newHand = [];
-	for(let i = 0; i < 5; i++) {
-		let newCard = contentManager.DrawReactionCard();
-		while(newHand.indexOf(newCard) > -1) {
-			newCard = contentManager.DrawReactionCard();
-		}
-		newHand.push(newCard);
-	}
+	let newHand = CreateNewHand();
 	return {id:userId, name:userName, hand:newHand, responded:false, score:0};
 }
 
@@ -444,6 +461,18 @@ function PickNextPicker() {
 			}
 		}
 	}
+}
+
+function CreateNewHand() {
+	let newHand = [];
+	for(let i = 0; i < 5; i++) {
+		let newCard = contentManager.DrawReactionCard();
+		while(newHand.indexOf(newCard) > -1) {
+			newCard = contentManager.DrawReactionCard();
+		}
+		newHand.push(newCard);
+	}
+	return newHand;
 }
 
 async function CleanUpGame() {
